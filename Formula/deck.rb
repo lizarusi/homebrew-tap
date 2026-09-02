@@ -2,8 +2,8 @@ class Deck < Formula
   desc "Control room for parallel AI coding agents (branch = worktree = tmux session)"
   homepage "https://github.com/lizarusi/deck"
   # private repo: fetched over SSH with your own GitHub keys
-  url "git@github.com:lizarusi/deck.git", using: :git, tag: "v0.3.0"
-  version "0.3.0"
+  url "git@github.com:lizarusi/deck.git", using: :git, tag: "v0.3.1"
+  version "0.3.1"
   head "git@github.com:lizarusi/deck.git", using: :git, branch: "main"
 
   depends_on "fzf"
