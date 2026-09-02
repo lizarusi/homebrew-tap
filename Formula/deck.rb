@@ -8,6 +8,7 @@ class Deck < Formula
 
   depends_on "fzf"
   depends_on "jq"
+  depends_on "koekeishiya/formulae/skhd"  # Option+` hotkey -> deck focus
   depends_on :macos
   depends_on "terminal-notifier"
   depends_on "tmux"
@@ -23,8 +24,12 @@ class Deck < Formula
 
   def caveats
     <<~EOS
-      Run once per machine to wire Claude Code hooks, tmux and iTerm:
+      Run once per machine to wire Claude Code hooks, tmux, iTerm and skhd:
         deck setup
+
+      skhd (the Option+` hotkey) needs Accessibility access: macOS prompts
+      the first time it starts; enable it in System Settings > Privacy &
+      Security > Accessibility, then re-run deck setup.
 
       If this machine previously used deck from a checkout (install.sh),
       its completion symlink blocks linking — run: brew link --overwrite deck
