@@ -2,13 +2,12 @@ class Deck < Formula
   desc "Control room for parallel AI coding agents (branch = worktree = tmux session)"
   homepage "https://github.com/lizarusi/deck"
   # private repo: fetched over SSH with your own GitHub keys
-  url "git@github.com:lizarusi/deck.git", using: :git, tag: "v0.7.0"
-  version "0.7.0"
+  url "git@github.com:lizarusi/deck.git", using: :git, tag: "v0.7.1"
+  version "0.7.1"
   head "git@github.com:lizarusi/deck.git", using: :git, branch: "main"
 
   depends_on "fzf"
   depends_on "jq"
-  depends_on "koekeishiya/formulae/skhd"  # Fn+` hotkey -> deck focus
   depends_on :macos
   depends_on "terminal-notifier"
   depends_on "tmux"
@@ -24,7 +23,9 @@ class Deck < Formula
 
   def caveats
     <<~EOS
-      Run once per machine to wire Claude Code hooks, tmux, iTerm and skhd:
+      Run once per machine to wire Claude Code hooks, tmux, iTerm and skhd
+      (deck setup taps koekeishiya/formulae and installs skhd itself —
+      a cross-tap dependency here would make newer Homebrew refuse the install):
         deck setup
 
       skhd (the Fn+` hotkey, iTerm2 only) needs two one-time grants:
