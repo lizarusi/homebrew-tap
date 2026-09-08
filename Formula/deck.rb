@@ -6,6 +6,15 @@ class Deck < Formula
   version "0.7.1"
   head "git@github.com:lizarusi/deck.git", using: :git, branch: "main"
 
+  # prebuilt bottle: pure bash, so one file serves every macOS/arch ("all").
+  # A bottle install needs neither the private source repo nor up-to-date
+  # Command Line Tools. Rebuild per release: see CLAUDE.md "Releasing".
+  bottle do
+    root_url "https://github.com/lizarusi/homebrew-tap/releases/download/deck-0.7.1"
+    rebuild 1
+    sha256 cellar: :any_skip_relocation, all: "d4000dc36e05920c17b9dfb04a28126afd60450ae9a23151660c43b5513a4db0"
+  end
+
   depends_on "fzf"
   depends_on "jq"
   depends_on :macos
