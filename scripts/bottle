@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# bottle [--all] <formula> — build and publish the prebuilt bottle for a
+# formula of this tap and point the formula at it. Run AFTER the formula's
+# url/tag/version were bumped and pushed.
+#   --all   the bottle is platform-independent (pure scripts, e.g. deck): one
+#           file tagged "all" serves every macOS/arch. brew bottle only emits
+#           "all" on its own when two platforms agree, so the tag is rewritten.
+#   without it the bottle keeps brew's tag (arm64_tahoe, ...): it serves that
+#           macOS and newer ones on the same arch; build on the oldest Mac
+#           you care about.
+set -euo pipefail
+all=0; [ "${1:-}" = --all ] && { all=1; shift; }
+name=${1:?usage: bottle [--all] <formula>}
+tap_dir=$(cd "$(dirname "$0")/.." && pwd)
+formula="$tap_dir/Formula/$name.rb"
+[ -f "$formula" ] || { echo "no such formula: $formula" >&2; exit 1; }
+version=$(brew info --json=v2 "lizarusi/tap/$name" | jq -r '.formulae[0].versions.stable')
+[ -n "$version" ] && [ "$version" != null ] || { echo "no version for $name" >&2; exit 1; }
+release="$name-$version"
+root_url="https://github.com/lizarusi/homebrew-tap/releases/download/$release"
+work=$(mktemp -d); trap 'rm -rf "$work"' EXIT
+cd "$work"
+
+# drop the previous version's bottle block first, or brew bottle numbers the
+# new one as a rebuild of it instead of starting at 0
+python3 - "$formula" <<'PY'
+import re, sys
+p = sys.argv[1]; s = open(p).read()
+open(p, 'w').write(re.sub(r'  bottle do\n.*?\n  end\n\n?', '', s, count=1, flags=re.S))
+PY
+# a bottle must come from a --build-bottle install
+brew uninstall "$name" >/dev/null 2>&1 || true
+brew install --build-bottle "lizarusi/tap/$name"
+brew bottle --json --root-url="$root_url" "lizarusi/tap/$name" >/dev/null
+json=$(ls "$name"--"$version".*.bottle*.json)
+src=$(jq -r '.[].bottle.tags[].local_filename' "$json")
+tag=$(jq -r '.[].bottle.tags | keys[0]' "$json")
+cellar=$(jq -r '.[].bottle.cellar' "$json")
+rebuild=$(jq -r '.[].bottle.rebuild' "$json")
+[ "$all" = 1 ] && tag=all
+asset="$name-$version.$tag.bottle.tar.gz"; [ "$rebuild" != 0 ] && asset="$name-$version.$tag.bottle.$rebuild.tar.gz"
+cp "$src" "$asset"
+sha=$(shasum -a 256 "$asset" | cut -d' ' -f1)
+
+gh release view "$release" --repo lizarusi/homebrew-tap >/dev/null 2>&1 \
+  || gh release create "$release" --repo lizarusi/homebrew-tap --title "$name $version bottle" \
+       --notes "Prebuilt bottle for the $name formula ($tag)." >/dev/null
+gh release upload "$release" "$asset" --repo lizarusi/homebrew-tap --clobber >/dev/null
+
+# (re)write the bottle block: after an existing one, else before the first
+# depends_on / def install
+python3 - "$formula" "$root_url" "$rebuild" "$cellar" "$tag" "$sha" <<'PY'
+import re, sys
+p, root, rebuild, cellar, tag, sha = sys.argv[1:]
+cellar = cellar if cellar.startswith(":") else f'"{cellar}"'
+s = open(p).read()
+block = f'''  bottle do
+    root_url "{root}"
+{"    rebuild " + rebuild + chr(10) if rebuild != "0" else ""}    sha256 cellar: {cellar}, {tag}: "{sha}"
+  end
+'''
+if 'bottle do' in s:
+    s = re.sub(r'  bottle do\n.*?\n  end\n', block, s, count=1, flags=re.S)
+else:
+    m = re.search(r'^  (depends_on|def install)', s, flags=re.M)
+    s = s[:m.start()] + block + '\n' + s[m.start():]
+open(p, 'w').write(s)
+PY
+ruby -c "$formula" >/dev/null
+git -C "$tap_dir" add "$formula"
+git -C "$tap_dir" commit -qm "$name $version: bottle ($tag)" && git -C "$tap_dir" push -q origin main
+echo "bottle published: $root_url/$asset"
+echo "verify on this machine: brew uninstall $name && brew install lizarusi/tap/$name   (expect 'Pouring $asset')"
