@@ -2,8 +2,8 @@ class Deck < Formula
   desc "Control room for parallel AI coding agents (branch = worktree = tmux session)"
   homepage "https://github.com/lizarusi/deck"
   # private repo: fetched over SSH with your own GitHub keys
-  url "git@github.com:lizarusi/deck.git", using: :git, tag: "v0.8.1"
-  version "0.8.1"
+  url "git@github.com:lizarusi/deck.git", using: :git, tag: "v0.8.2"
+  version "0.8.2"
   head "git@github.com:lizarusi/deck.git", using: :git, branch: "main"
 
   # prebuilt bottle: pure bash, so one file serves every macOS/arch ("all").
@@ -21,11 +21,9 @@ class Deck < Formula
   # per macOS/arch, and where none fits it compiles, which fails with
   # outdated Command Line Tools — that must not take deck down with it.
   # `deck setup` installs lizarusi/tap/skhd itself and only warns on failure.
+  depends_on "lizarusi/tap/terminal-notifier"   # upstream's prebuilt app: core's needs Xcode, no Intel bottle
   depends_on :macos
   depends_on "tmux"
-  # terminal-notifier (clickable notifications) is optional like skhd: its
-  # build needs full Xcode where Homebrew has no bottle (Intel Macs), and
-  # deck falls back to osascript banners. `deck setup` installs it when it can.
 
   def install
     # keep the repo layout intact under libexec: bin/deck resolves its own
