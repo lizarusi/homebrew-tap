@@ -52,7 +52,8 @@ gh release upload "$release" "$asset" --repo lizarusi/homebrew-tap --clobber >/d
 python3 - "$formula" "$root_url" "$rebuild" "$cellar" "$tag" "$sha" <<'PY'
 import re, sys
 p, root, rebuild, cellar, tag, sha = sys.argv[1:]
-cellar = cellar if cellar.startswith(":") else f'"{cellar}"'
+# brew's json says "any_skip_relocation"; the formula wants the symbol
+cellar = ":" + cellar.lstrip(":") if cellar.lstrip(":") in ("any", "any_skip_relocation") else f'"{cellar}"'
 s = open(p).read()
 block = f'''  bottle do
     root_url "{root}"

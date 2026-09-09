@@ -13,7 +13,7 @@ class Skhd < Formula
   bottle do
     root_url "https://github.com/lizarusi/homebrew-tap/releases/download/skhd-0.3.9"
     rebuild 1
-    sha256 cellar: "any_skip_relocation", arm64_tahoe: "7168c49aad6e509534e3f8340764e6ff1d051c5f3a71c00955ca11c300d68eda"
+    sha256 cellar: :any_skip_relocation, arm64_tahoe: "7168c49aad6e509534e3f8340764e6ff1d051c5f3a71c00955ca11c300d68eda"
   end
 
   depends_on :macos
