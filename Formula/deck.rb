@@ -17,6 +17,7 @@ class Deck < Formula
 
   depends_on "fzf"
   depends_on "jq"
+  depends_on "lizarusi/tap/skhd"   # Fn+` -> deck focus; bottled in this tap (see Formula/skhd.rb)
   depends_on :macos
   depends_on "terminal-notifier"
   depends_on "tmux"
@@ -32,15 +33,14 @@ class Deck < Formula
 
   def caveats
     <<~EOS
-      Run once per machine to wire Claude Code hooks, tmux, iTerm and skhd
-      (deck setup taps koekeishiya/formulae and installs skhd itself —
-      a cross-tap dependency here would make newer Homebrew refuse the install):
+      Run once per machine to wire Claude Code hooks, tmux, iTerm2,
+      Terminal.app and skhd:
         deck setup
 
-      skhd (the Fn+` hotkey, iTerm2 only) needs two one-time grants:
+      skhd (the Fn+` jump-to-deck key) needs two one-time grants:
       Accessibility (macOS prompts when it first starts — enable it under
       System Settings > Privacy & Security, then re-run deck setup) and
-      Automation for iTerm2 (prompted on the first press).
+      Automation for the terminal (prompted on the first press).
 
       If this machine previously used deck from a checkout (install.sh),
       its completion symlink blocks linking — run: brew link --overwrite deck
