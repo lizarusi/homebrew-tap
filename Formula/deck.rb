@@ -17,7 +17,10 @@ class Deck < Formula
 
   depends_on "fzf"
   depends_on "jq"
-  depends_on "lizarusi/tap/skhd"   # Fn+` -> deck focus; bottled in this tap (see Formula/skhd.rb)
+  # skhd (Fn+` -> deck focus) is deliberately NOT a dependency: its bottle is
+  # per macOS/arch, and where none fits it compiles, which fails with
+  # outdated Command Line Tools — that must not take deck down with it.
+  # `deck setup` installs lizarusi/tap/skhd itself and only warns on failure.
   depends_on :macos
   depends_on "terminal-notifier"
   depends_on "tmux"
@@ -37,10 +40,13 @@ class Deck < Formula
       Terminal.app and skhd:
         deck setup
 
-      skhd (the Fn+` jump-to-deck key) needs two one-time grants:
-      Accessibility (macOS prompts when it first starts — enable it under
-      System Settings > Privacy & Security, then re-run deck setup) and
-      Automation for the terminal (prompted on the first press).
+      deck setup also installs skhd (lizarusi/tap/skhd) for the Fn+`
+      jump-to-deck key. It needs two one-time grants: Accessibility (macOS
+      prompts when it first starts — enable it under System Settings >
+      Privacy & Security, then re-run deck setup) and Automation for the
+      terminal (prompted on the first press). If skhd cannot be built on
+      this Mac (no bottle for it, Command Line Tools outdated), setup warns
+      and wires everything else; the key is optional.
 
       If this machine previously used deck from a checkout (install.sh),
       its completion symlink blocks linking — run: brew link --overwrite deck
