@@ -12,8 +12,9 @@ class Skhd < Formula
   # older macOS serves newer ones, not the other way round).
   bottle do
     root_url "https://github.com/lizarusi/homebrew-tap/releases/download/skhd-0.3.9"
-    rebuild 1
-    sha256 cellar: :any_skip_relocation, arm64_tahoe: "7168c49aad6e509534e3f8340764e6ff1d051c5f3a71c00955ca11c300d68eda"
+    rebuild 2
+    sha256 cellar: :any_skip_relocation, arm64_big_sur: "313edf29ef94430114262f8339c60b58359f176deb2817112d4c4d1ea794c7a7"
+    sha256 cellar: :any_skip_relocation, big_sur: "313edf29ef94430114262f8339c60b58359f176deb2817112d4c4d1ea794c7a7"
   end
 
   depends_on :macos
