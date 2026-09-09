@@ -1,16 +1,25 @@
 #!/usr/bin/env bash
-# bottle [--all] <formula> — build and publish the prebuilt bottle for a
-# formula of this tap and point the formula at it. Run AFTER the formula's
-# url/tag/version were bumped and pushed.
-#   --all   the bottle is platform-independent (pure scripts, e.g. deck): one
-#           file tagged "all" serves every macOS/arch. brew bottle only emits
-#           "all" on its own when two platforms agree, so the tag is rewritten.
-#   without it the bottle keeps brew's tag (arm64_tahoe, ...): it serves that
-#           macOS and newer ones on the same arch; build on the oldest Mac
-#           you care about.
+# bottle [--all | --tags t1,t2] <formula> — build and publish the prebuilt
+# bottle for a formula of this tap and point the formula at it. Run AFTER
+# the formula's url/tag/version were bumped and pushed.
+#   --all        the bottle is platform-independent (pure scripts, e.g.
+#                deck): one file tagged "all" serves every macOS/arch. brew
+#                bottle only emits "all" on its own when two platforms
+#                agree, so the tag is rewritten.
+#   --tags a,b   publish the one tarball under these tags instead of brew's
+#                (a binary built universal with an old minimum macOS, e.g.
+#                skhd). Homebrew takes the newest bottle built on an OLDER
+#                macOS when there is no exact tag, so the oldest tag per
+#                arch is enough: arm64_big_sur,big_sur covers macOS 11+.
+#   neither      brew's own tag (arm64_tahoe, ...): serves that macOS and
+#                newer on that arch; build on the oldest Mac you care about.
 set -euo pipefail
-all=0; [ "${1:-}" = --all ] && { all=1; shift; }
-name=${1:?usage: bottle [--all] <formula>}
+all=0; tags=""
+case "${1:-}" in
+  --all)  all=1; shift ;;
+  --tags) tags=${2:?--tags needs a list}; shift 2 ;;
+esac
+name=${1:?usage: bottle [--all | --tags t1,t2] <formula>}
 tap_dir=$(cd "$(dirname "$0")/.." && pwd)
 formula="$tap_dir/Formula/$name.rb"
 [ -f "$formula" ] || { echo "no such formula: $formula" >&2; exit 1; }
@@ -28,8 +37,10 @@ import re, sys
 p = sys.argv[1]; s = open(p).read()
 open(p, 'w').write(re.sub(r'  bottle do\n.*?\n  end\n\n?', '', s, count=1, flags=re.S))
 PY
-# a bottle must come from a --build-bottle install
-brew uninstall "$name" >/dev/null 2>&1 || true
+# a bottle must come from a --build-bottle install. Full name: a bare one is
+# ambiguous once another tap defines it; --ignore-dependencies: an installed
+# formula's receipt may still list this one
+brew uninstall --ignore-dependencies "lizarusi/tap/$name" >/dev/null 2>&1 || true
 brew install --build-bottle "lizarusi/tap/$name"
 brew bottle --json --root-url="$root_url" "lizarusi/tap/$name" >/dev/null
 json=$(ls "$name"--"$version".*.bottle*.json)
@@ -38,14 +49,17 @@ tag=$(jq -r '.[].bottle.tags | keys[0]' "$json")
 cellar=$(jq -r '.[].bottle.cellar' "$json")
 rebuild=$(jq -r '.[].bottle.rebuild' "$json")
 [ "$all" = 1 ] && tag=all
-asset="$name-$version.$tag.bottle.tar.gz"; [ "$rebuild" != 0 ] && asset="$name-$version.$tag.bottle.$rebuild.tar.gz"
-cp "$src" "$asset"
-sha=$(shasum -a 256 "$asset" | cut -d' ' -f1)
-
+[ -n "$tags" ] && tag=$tags
+sha=$(shasum -a 256 "$src" | cut -d' ' -f1)
 gh release view "$release" --repo lizarusi/homebrew-tap >/dev/null 2>&1 \
   || gh release create "$release" --repo lizarusi/homebrew-tap --title "$name $version bottle" \
        --notes "Prebuilt bottle for the $name formula ($tag)." >/dev/null
-gh release upload "$release" "$asset" --repo lizarusi/homebrew-tap --clobber >/dev/null
+# one asset per tag, all the same tarball
+for t in ${tag//,/ }; do
+  asset="$name-$version.$t.bottle.tar.gz"; [ "$rebuild" != 0 ] && asset="$name-$version.$t.bottle.$rebuild.tar.gz"
+  cp "$src" "$asset"
+  gh release upload "$release" "$asset" --repo lizarusi/homebrew-tap --clobber >/dev/null
+done
 
 # (re)write the bottle block: after an existing one, else before the first
 # depends_on / def install
@@ -55,10 +69,10 @@ p, root, rebuild, cellar, tag, sha = sys.argv[1:]
 # brew's json says "any_skip_relocation"; the formula wants the symbol
 cellar = ":" + cellar.lstrip(":") if cellar.lstrip(":") in ("any", "any_skip_relocation") else f'"{cellar}"'
 s = open(p).read()
+lines = "".join(f'    sha256 cellar: {cellar}, {t}: "{sha}"\n' for t in tag.split(","))
 block = f'''  bottle do
     root_url "{root}"
-{"    rebuild " + rebuild + chr(10) if rebuild != "0" else ""}    sha256 cellar: {cellar}, {tag}: "{sha}"
-  end
+{"    rebuild " + rebuild + chr(10) if rebuild != "0" else ""}{lines}  end
 '''
 if 'bottle do' in s:
     s = re.sub(r'  bottle do\n.*?\n  end\n', block, s, count=1, flags=re.S)
@@ -70,5 +84,5 @@ PY
 ruby -c "$formula" >/dev/null
 git -C "$tap_dir" add "$formula"
 git -C "$tap_dir" commit -qm "$name $version: bottle ($tag)" && git -C "$tap_dir" push -q origin main
-echo "bottle published: $root_url/$asset"
-echo "verify on this machine: brew uninstall $name && brew install lizarusi/tap/$name   (expect 'Pouring $asset')"
+echo "bottle published under $tag: $root_url/"
+echo "verify on this machine: brew uninstall --ignore-dependencies lizarusi/tap/$name && brew install lizarusi/tap/$name   (expect 'Pouring $name-$version.<tag>.bottle...')"

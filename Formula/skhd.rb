@@ -18,9 +18,16 @@ class Skhd < Formula
 
   depends_on :macos
 
+  # One bottle for every Mac: a universal (arm64 + x86_64) binary with an
+  # old minimum macOS, published under every bottle tag by scripts/bottle
+  # --tags. Without this the bottle only serves the macOS/arch it was built
+  # on (Homebrew uses older-macOS bottles on newer macOS, never the reverse).
   def install
     ENV.deparallelize
-    system "make", "-j1", "install"
+    ENV.permit_arch_flags
+    ENV["MACOSX_DEPLOYMENT_TARGET"] = "11.0"
+    system "make", "-j1", "install",
+           "BUILD_FLAGS=-std=c99 -Wall -O2 -arch arm64 -arch x86_64 -mmacosx-version-min=11.0"
     system "codesign", "-fs", "-", "#{buildpath}/bin/skhd"
     bin.install "#{buildpath}/bin/skhd"
     (pkgshare/"examples").install "#{buildpath}/examples/skhdrc"
