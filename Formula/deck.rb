@@ -11,8 +11,8 @@ class Deck < Formula
   # Command Line Tools. Rebuild per release: see CLAUDE.md "Releasing".
   bottle do
     root_url "https://github.com/lizarusi/homebrew-tap/releases/download/deck-0.8.5"
-    rebuild 9
-    sha256 cellar: :any_skip_relocation, all: "ec43213282c0c6e1b6163da46f1eb0d827781cf3dcb4b776fb971e2a4a7f9f30"
+    rebuild 10
+    sha256 cellar: :any_skip_relocation, all: "889cb49632e6069932687ccd3615a93900231dd18dbcbff1077f15e598376a7f"
   end
 
   depends_on "fzf"
