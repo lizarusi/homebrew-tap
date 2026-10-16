@@ -10,9 +10,9 @@ class Deck < Formula
   # A bottle install needs neither the private source repo nor up-to-date
   # Command Line Tools. Rebuild per release: see CLAUDE.md "Releasing".
   bottle do
-    root_url "https://github.com/lizarusi/homebrew-tap/releases/download/deck-0.10.0"
-    rebuild 13
-    sha256 cellar: :any_skip_relocation, all: "ccd6c2b7a14641684ad31e74d517885213785f7efc0b142bf12083e2830161d7"
+    root_url "https://github.com/lizarusi/homebrew-tap/releases/download/deck-0.11.0"
+    rebuild 14
+    sha256 cellar: :any_skip_relocation, all: "63bd7f222b75f4e6e1b04795f978be43a5efcbcd23e4137f2e6da39f126a28f0"
   end
 
   depends_on "fzf"
